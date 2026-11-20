@@ -10,10 +10,11 @@ Give it a textbook section, a paper figure, or a process ("secretory pathway", "
 
 Pick a layout per video (`?layout=`):
 
-| A real acinus: ~9 pyramidal cells around a central lumen | Free ribosome starts the chain; signal peptide in cyan |
+| layout | what you get |
 |---|---|
-| Chain enters the RER lumen through the translocon | COPII-type vesicle buds from the ER exit site |
-| Label moves cis → trans through a 6-cisterna Golgi stack | Zymogen granule heads for the apical membrane |
+| `clean` | pure 3D footage, no page or text at all — for your own voice-over / editing |
+| `lecture` (default) | dark academic layout: step number + serif title, textbook-wording captions, pathway navigator, legend, sources |
+| `reel` | Showreel: one bold hook per step, legend, "pseudo-colour" chip — vertical-feed friendly |
 | `notes` | light "handout" layout: 3D on the left, every step listed on a paper sidebar — for courseware |
 | `dashboard` | live tracking panel: how many labeled molecules sit in each compartment, counted from the model itself (and labeled as such) |
 | your own | drop a `layouts/<name>.js` (meta / css / html / mount / update) and design it for the topic |
@@ -37,16 +38,16 @@ No fake data panels, no ATP laser beams, no "magic" — if a mechanism is unsett
 
 ## Case study: the secretory pathway (high-school textbook)
 
-People's Education Press *Biology, Compulsory 1*, §3.2 "Synthesis and transport of secretory proteins" — a guinea-pig pancreatic acinar cell and Palade's ³H-leucine pulse-chase experiment. 83 s, 10 steps.
+People's Education Press *Biology, Compulsory 1*, §3.2 "Synthesis and transport of secretory proteins" — a guinea-pig pancreatic acinar cell and Palade's ³H-leucine pulse-chase experiment. 87 s, 11 steps (+ a 37 s vertical showreel).
 
 | | |
 |---|---|
 | ![](examples/secretion/media/still_6.jpg) | ![](examples/secretion/media/still_13.jpg) |
-| Polarized acinar cell, cut open | Free ribosome starts the chain; signal peptide in cyan |
+| A real acinus: ~9 pyramidal cells around a central lumen | Free ribosome starts the chain; signal peptide in cyan |
 | ![](examples/secretion/media/still_27.jpg) | ![](examples/secretion/media/still_36.jpg) |
-| Chain enters the ER lumen through a channel; signal peptide cleaved | ER membrane buds a vesicle that carries the labeled cohort |
+| Chain enters the RER lumen through the translocon | Vesicle on its way from the ER exit site to the cis-Golgi |
 | ![](examples/secretion/media/still_46.jpg) | ![](examples/secretion/media/still_64.jpg) |
-| Label moves cis → trans through the Golgi | Ω-shaped fusion pore at the apical membrane, contents released |
+| Label moves cis → trans through a 6-cisterna Golgi stack | Zymogen granule heads for the apical membrane |
 
 ![](examples/secretion/media/still_80.jpg)
 *Replay of the pulse-chase: label appears in the RER (3 min) → Golgi (17 min) → apical vesicles & outside (117 min), textbook data.*
