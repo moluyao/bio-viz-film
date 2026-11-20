@@ -1,0 +1,61 @@
+// Deterministic frame recorder: the page exposes window.renderAt(t); we call it per frame and screenshot.
+//   node record.mjs <siteDir> <out.mp4> [--fps 60] [--dpr 2] [--size 1080x1350] [--from 0 --to 31]
+//   node record.mjs <siteDir> --stills 1,6,12 --stilldir out/stills      (PNG stills only)
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { chromium } from 'playwright-core';
+
+const args = process.argv.slice(2);
+const flag = (n, d) => { const i = args.indexOf('--' + n); if (i < 0) return d; const v = args[i + 1]; args.splice(i, 2); return v; };
+const FPS = Number(flag('fps', 60)), DPR = Number(flag('dpr', 2));
+const [W, H] = String(flag('size', '1080x1350')).split('x').map(Number);
+const SCALE = flag('scale', null), FROM = Number(flag('from', 0)), TO = flag('to', null), QUERY = flag('query', '');
+const stills = flag('stills', null), stillDir = flag('stilldir', 'stills');
+const [siteDir, outFile] = args;
+
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
+const root = path.resolve(siteDir);
+const server = http.createServer((req, res) => {
+  const p = path.join(root, decodeURIComponent(req.url.split('?')[0]) === '/' ? 'index.html' : decodeURIComponent(req.url.split('?')[0]));
+  if (!p.startsWith(root) || !fs.existsSync(p)) { res.writeHead(404); return res.end(); }
+  res.writeHead(200, { 'content-type': MIME[path.extname(p)] || 'application/octet-stream' }); fs.createReadStream(p).pipe(res);
+}).listen(0);
+const url = `http://127.0.0.1:${server.address().port}/index.html?record=1&dpr=${DPR}${QUERY ? '&' + QUERY : ''}`;
+
+const browser = await chromium.launch({ channel: 'chrome', headless: true,
+  args: ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', '--hide-scrollbars', '--force-color-profile=srgb'] });
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: DPR });
+const problems = [];
+page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') problems.push(`[console.${m.type()}] ${m.text()}`); });
+page.on('pageerror', (e) => problems.push(`[pageerror] ${e.message}`));
+await page.goto(url, { waitUntil: 'load' });
+await page.waitForFunction(() => window.__ready === true, null, { timeout: 120000 });
+await page.evaluate(() => document.fonts.ready);
+const DURATION = await page.evaluate(() => window.DURATION);
+const cdp = await page.context().newCDPSession(page);
+const CLIP = { x: 0, y: 0, width: W, height: H, scale: DPR };
+const shot = async (fmt = 'jpeg') => Buffer.from((await cdp.send('Page.captureScreenshot', { format: fmt, quality: 95, optimizeForSpeed: true, clip: CLIP })).data, 'base64');
+const frame = (t) => page.evaluate((tt) => { window.renderAt(tt); return new Promise((r) => requestAnimationFrame(() => r())); }, t);
+
+if (stills) {
+  fs.mkdirSync(stillDir, { recursive: true });
+  for (const s of stills.split(',').map(Number)) { await frame(s); fs.writeFileSync(path.join(stillDir, `t${s.toFixed(2).padStart(5, '0')}.png`), await shot('png')); }
+  console.log('stills ->', path.resolve(stillDir));
+} else {
+  const end = TO != null ? Number(TO) : DURATION, total = Math.round((end - FROM) * FPS);
+  fs.mkdirSync(path.dirname(path.resolve(outFile)), { recursive: true });
+  const ff = spawn('ffmpeg', ['-v', 'error', '-y', '-f', 'image2pipe', '-framerate', String(FPS), '-c:v', 'mjpeg', '-i', '-',
+    ...(SCALE ? ['-vf', `scale=${SCALE.replace('x', ':')}:flags=lanczos`] : []), '-c:v', 'libx264', '-preset', 'medium', '-crf', '17', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', path.resolve(outFile)], { stdio: ['pipe', 'inherit', 'inherit'] });
+  const t0 = Date.now();
+  for (let f = 0; f < total; f++) {
+    await frame(FROM + f / FPS);
+    if (!ff.stdin.write(await shot())) await new Promise((r) => ff.stdin.once('drain', r));
+    if (f % 60 === 0) process.stdout.write(`\r${(f / FPS).toFixed(1)}s / ${(total / FPS).toFixed(1)}s  ${((Date.now() - t0) / 1000).toFixed(0)}s elapsed  `);
+  }
+  ff.stdin.end(); await new Promise((r) => ff.on('close', r));
+  console.log('\nwrote', path.resolve(outFile));
+}
+console.log(problems.length ? 'problems:\n' + [...new Set(problems)].slice(0, 20).join('\n') : 'no page errors');
+await browser.close(); server.close();
