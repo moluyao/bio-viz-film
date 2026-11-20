@@ -10,13 +10,19 @@ Give it a textbook section, a paper figure, or a process ("secretory pathway", "
 
 Pick a layout per video (`?layout=`):
 
-| layout | what you get |
+| A real acinus: ~9 pyramidal cells around a central lumen | Free ribosome starts the chain; signal peptide in cyan |
 |---|---|
-| `clean` | pure 3D footage, no page or text at all — for your own voice-over / editing |
-| `lecture` (default) | dark academic layout: step number + serif title, textbook-wording captions, pathway navigator, legend, sources |
+| Chain enters the RER lumen through the translocon | COPII-type vesicle buds from the ER exit site |
+| Label moves cis → trans through a 6-cisterna Golgi stack | Zymogen granule heads for the apical membrane |
 | `notes` | light "handout" layout: 3D on the left, every step listed on a paper sidebar — for courseware |
 | `dashboard` | live tracking panel: how many labeled molecules sit in each compartment, counted from the model itself (and labeled as such) |
 | your own | drop a `layouts/<name>.js` (meta / css / html / mount / update) and design it for the topic |
+
+## v3: true proportions + Showreel mode
+
+- **No simplified organelles.** Every structure follows EM data at true proportions (1 unit = 0.5 µm): pyramidal acinar cells forming an acinus, 16 parallel RER cisternae studded with 25 nm ribosomes, 6-cisterna Golgi stacks with dilated fenestrated rims, condensing vacuoles (Ø ~1.5 µm) maturing into ~0.9 µm zymogen granules, cristae-filled mitochondria, 100 nm microvilli. The camera zooms continuously over three orders of magnitude instead of rescaling anything. Dimension table: `references/morphology-acinar.md`.
+- **Showreel mode** for the scroll-stopping version of the same science: `look=vivid|neon|academic|paper`, `palette=candy|sunset|neon|textbook`, `fx=channels` (pixel-scan wipe to the next pseudo-colour palette), `layout=reel` (one bold hook per step + legend + "pseudo-colour, not microscopy" chip), vertical 1080×1920. Ask in plain words: *"make a bright, punchy vertical reel of this"*.
+- Five independent review rounds so far; the latest verdicts: lecture cut usable for teaching, showreel fixed after round 5 (legend colour clashes, overexposed fusion shot, a stray fragment).
 
 ## Why another bio-viz tool
 
@@ -45,7 +51,7 @@ People's Education Press *Biology, Compulsory 1*, §3.2 "Synthesis and transport
 ![](examples/secretion/media/still_80.jpg)
 *Replay of the pulse-chase: label appears in the RER (3 min) → Golgi (17 min) → apical vesicles & outside (117 min), textbook data.*
 
-- 🎬 Videos (720p, in repo): [lecture](examples/secretion/media/secretion_lecture_720p.mp4) · [clean](examples/secretion/media/secretion_clean_720p.mp4)
+- 🎬 Videos (720p, in repo): [lecture](examples/secretion/media/secretion_lecture_720p.mp4) · [showreel (vertical)](examples/secretion/media/secretion_showreel_720p.mp4)
 - 🎞 Full 1080p60 masters: see **Releases**
 - 🔍 Honest self-audit of organelle shapes + comparison with a viral cell video: [`examples/secretion/形态核查与对标对比.md`](examples/secretion/形态核查与对标对比.md) (Chinese)
 - 📝 The three review rounds that shaped it: [`examples/secretion/`](examples/secretion/) (in Chinese) — round 1 caught fabricated dashboard data and wrong organelle anatomy in the first prototype; round 2 caught label non-conservation and missing membrane dynamics; round 3 verdict: *usable for teaching with minor fixes* (both fixed before rendering).

@@ -72,3 +72,36 @@ export class Pool {
     if (typeof s === 'number') this.s.setScalar(s); else this.s.copy(s); this.M.compose(p, this.q, this.s); this.m.setMatrixAt(this.n++, this.M); }
   end() { this.m.count = this.n; this.m.instanceMatrix.needsUpdate = true; }
 }
+
+// ---------- v3 helpers: smooth value noise, procedural surfaces ----------
+const _h = (x, y, z) => { let n = (x * 374761393 + y * 668265263 + z * 2147483647) | 0; n = (n ^ (n >>> 13)) * 1274126177; return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
+const _s = (t) => t * t * (3 - 2 * t);
+export function noise3(x, y, z) { // smooth value noise in [0,1]
+  const X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z), fx = _s(x - X), fy = _s(y - Y), fz = _s(z - Z);
+  const L = (a, b, t) => a + (b - a) * t;
+  return L(L(L(_h(X, Y, Z), _h(X + 1, Y, Z), fx), L(_h(X, Y + 1, Z), _h(X + 1, Y + 1, Z), fx), fy),
+           L(L(_h(X, Y, Z + 1), _h(X + 1, Y, Z + 1), fx), L(_h(X, Y + 1, Z + 1), _h(X + 1, Y + 1, Z + 1), fx), fy), fz);
+}
+export const fbm = (x, y, z, o = 3) => { let a = 0, w = 0.5, f = 1; for (let i = 0; i < o; i++) { a += w * noise3(x * f, y * f, z * f); f *= 2.03; w *= 0.5; } return a / (1 - Math.pow(0.5, o)); };
+
+// grid surface: fn(i/nu, j/nv) -> {p:Vector3, keep:bool}; faces with any dropped corner are removed
+export function gridGeometry(nu, nv, fn, wrapV = false) {
+  const pos = new Float32Array((nu + 1) * (nv + 1) * 3), ok = new Uint8Array((nu + 1) * (nv + 1)), idx = [];
+  for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const r = fn(i / nu, j / nv), k = i * (nv + 1) + j; if (r) { pos[k * 3] = r.p.x; pos[k * 3 + 1] = r.p.y; pos[k * 3 + 2] = r.p.z; ok[k] = r.keep === false ? 0 : 1; } }
+  for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) { if (!wrapV && j === nv) continue;
+    const a = i * (nv + 1) + j, b = a + 1, c = a + nv + 1, d = c + 1;
+    if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+// capsule bent along a curve (mitochondria): radius profile closes smoothly at both ends
+export function bentCapsule(curve, r, rings = 64, seg = 20) {
+  const fr = curve.computeFrenetFrames(rings, false);
+  return gridGeometry(rings, seg, (u, v) => { const k = Math.round(u * rings), c = curve.getPointAt(u), prof = Math.pow(Math.max(0, 1 - Math.pow(Math.abs(2 * u - 1), 6)), 1 / 6), a = v * Math.PI * 2;
+    return { p: c.addScaledVector(fr.normals[k], Math.cos(a) * r * prof).addScaledVector(fr.binormals[k], Math.sin(a) * r * prof) }; }, true);
+}
+// two-subunit ribosome (large + small subunit), unit = real size in scene units
+export function ribosomeGeometry(scale) {
+  const a = new THREE.IcosahedronGeometry(0.0125 * scale, 1), b = new THREE.IcosahedronGeometry(0.009 * scale, 1); b.translate(0, 0.004 * scale, 0.014 * scale); b.scale(1.2, 1, 0.8);
+  const g = new THREE.BufferGeometry(), pa = a.attributes.position.array, pb = b.attributes.position.array, p = new Float32Array(pa.length + pb.length); p.set(pa); p.set(pb, pa.length);
+  g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.computeVertexNormals(); return g;
+}

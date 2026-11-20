@@ -18,7 +18,7 @@ template/site2/   ← 当前引擎（v2）
   vendor/           three r170 + addons（postprocessing / environments 等）
 template/tools/   record.mjs 逐帧录制 · sheet2.py 样张拼图 · probe.mjs 射线探针 · hidetest.mjs 逐物体排查
 references/       accuracy-protocol.md（必读） · techniques.md · new-scene.md · science-checklist.md · pitfalls.md
-examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运输》完整示例 + 两轮审查记录
+examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运输》完整示例 + 五轮审查记录
 ```
 
 ## 输出形态（版式可选）
@@ -35,6 +35,22 @@ examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运
   - 画面上的每个数字都必须是真实的（来自出处或模型状态）；
   - 不照抄参考视频，版式要按主题新设计；
   - 3D 主体用 `meta.camShift` 让出文字区。
+
+## 炫片模式（Showreel）—— 要流量、要惊艳时用
+和讲解版用同一套科学内容，只改"怎么展示"。可以在提示词里直接说，也可以用参数：
+
+| 你可以说 | 参数 | 可选值 |
+|---|---|---|
+| "做个炫片 / 惊艳版 / 竖版短视频" | `?story=<题材>-reel`（讲解 story 按 0.42 倍压缩时间，一镜到底） | — |
+| "风格明亮 / 霓虹 / 学术 / 纸质" | `look=` | `vivid` 明亮糖果 · `neon` 暗底霓虹发光 · `academic` 深色学术 · `paper` 纸面 |
+| "配色换成糖果 / 冰蓝 / 日落" | `palette=` | `textbook` · `candy` · `ice` · `sunset` · `neon` |
+| "要那种扫描换色的转场" | `fx=channels` | 每到新一步，用像素扫描带切换到下一个"伪彩通道"（类似荧光显微镜切换通道） |
+| "大字标题 / 抖音风" | `layout=reel` | 每步一句大字钩子，加伪彩通道标签和简短免责 |
+| "竖版" | `--size 1080x1920` | 竖版时相机自动拉远 1.7 倍（`portraitZoom`） |
+
+规则：
+- 伪彩只换颜色，不改结构和过程；画面上必须常驻"颜色为伪彩"的说明。
+- 炫片版同样要经过科学审查。
 
 录制：
 ```
@@ -67,6 +83,11 @@ node tools/record.mjs site2 out/x_lecture.mp4 --size 1920x1080 --dpr 2 --scale 1
 **6. 出片与交付**：
 - 交付物：纯画面版 + 讲解版两条 mp4，加上事实表和两轮审查记录。
 - 发布时附中英文文案；不混 BGM。
+
+## 形态原则（不简化）
+- 细胞器**按电镜真实形态和比例**建模，不画成规整几何体。尺寸先查表（`references/morphology-acinar.md` 的写法），再写代码。
+- 跨三个数量级（细胞 15 μm → 核糖体 25 nm）时不缩放结构，而是让相机连续推近（对数距离插值），分子事件放在近景里看。
+- 闭合结构（颗粒、线粒体、浓缩泡、核）被剖切时显示实心截面（`capify`），不留空壳。
 
 ## 版式原则
 - 版式按主题原创，不照抄参考视频。

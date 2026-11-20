@@ -27,4 +27,4 @@
 | ChimeraX | 蛋白结构动画 | `.cxc` 脚本：`movie record; turn y 2 180; wait 180; movie encode` |
 | cellPACK | 科学排布数据（细胞质、HIV、支原体配方） | 导出给 Mol* 或 MN |
 
-调研全文（资源表和 14 条技法）：`references/research-landscape.md`。
+调研全文（资源表和 14 条技法）：工作区 `research/bio-viz-skill/调研报告.md`。
