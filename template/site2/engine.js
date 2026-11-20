@@ -1,6 +1,6 @@
 // v2 engine: cinematic renderer (GTAO + depth of field + bloom), step timeline, optional lecture overlay.
 //   ?story=secretion   which story-*.js to play (its scene is named inside the story)
-//   ?layout=clean      pure 3D, no text at all      (default: lecture)
+//   ?layout=clean      pure 3D, no text at all; other values load layouts/<name>.js (default: story.layout || lecture)
 //   ?record=1&dpr=2    used by the recorder; ?t=12.5 freezes on one time
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -68,28 +68,13 @@ const v3 = (a) => new THREE.Vector3(...a);
 const camAt = (s, which, t) => { const tg = anchorAt(which === 'A' ? s.tA : s.tB, t); return { tg, pos: tg.clone().add(v3(which === 'A' ? s.offA : s.offB)) }; };
 const stepAt = (t) => { const i = steps.findIndex((s) => t < s.t1); return i < 0 ? steps.length - 1 : i; };
 
-// ---------- lecture overlay (built once, driven by t) ----------
+// ---------- layout (pluggable): ?layout=clean | lecture | notes | dashboard | <your own layouts/*.js> ----------
 const $ = (id) => document.getElementById(id);
 const PAL = world.palette;
-$('course').textContent = STORY.course; $('ttl').textContent = STORY.title; $('fn').textContent = STORY.footnote; $('src').textContent = STORY.sources;
-const nodes = STORY.rail.map((n) => { const d = document.createElement('div'); d.className = 'node'; d.innerHTML = `<span>${n}</span><i></i>`; $('rail').appendChild(d); return d; });
-$('energy').textContent = '能量：主要来自线粒体';
-function overlay(t, i) {
-  const s = steps[i], lt = t - s.t0, inU = ease(win(lt, 0.35, 1.1)), outU = ease(win(lt, s.dur - 0.7, s.dur - 0.1)), a = inU * (1 - outU);
-  const cap = $('cap'); cap.style.opacity = a; cap.style.transform = `translateY(${(1 - inU) * 18}px)`;
-  cap.querySelector('.idx').innerHTML = `<b>${String(i + 1).padStart(2, '0')}</b> / ${String(steps.length).padStart(2, '0')}`;
-  cap.querySelector('h2').textContent = s.title; cap.querySelector('p').innerHTML = s.text.join('<br>');
-  cap.querySelector('.bar').style.transform = `scaleX(${ease(win(lt, 0.5, 1.6)) * 0.6})`;
-  const railIdx = s.rail;
-  nodes.forEach((n, k) => { n.className = 'node' + (railIdx === k ? ' on' : (railIdx > k || railIdx === -3) ? ' done' : ''); });
-  $('rail').style.opacity = i === 0 ? ease(win(lt, 3, 4)) : 1;
-  $('energy').style.color = s.rail === -2 ? '#ffe27a' : 'rgba(255,255,255,.5)';
-  $('legend').innerHTML = (s.legend || []).map((k) => `<span><i style="background:${PAL[k]};${k === 'tracer' ? 'box-shadow:0 0 8px ' + PAL[k] : ''}"></i>${STORY.legend[k]}</span>`).join('');
-  $('legend').style.opacity = a;
-  const RP = STORY.T.replay || [0, 0, 0];
-  $('tl').innerHTML = (s.timeline || []).map(([tm, where], k) => `<div style="opacity:${ease(win(t, RP[k] - 0.4, RP[k] + 0.2)) * (1 - outU)};border-color:${t > RP[k] - 0.1 && (k === 2 || t < RP[k + 1] - 0.1) ? '#ffe27a' : 'rgba(255,226,122,.3)'}"><b>${tm}</b><span>${where}</span><em>教材数据</em></div>`).join('');
-  $('prog').style.width = `calc(${(t / DURATION) * 100}% - ${128 * (t / DURATION)}px)`;
-}
+const LAYOUT = Q.get('layout') || STORY.layout || 'lecture';
+let LM = null; const ctx = { STORY, steps, DURATION, PAL, world, ease, win, clamp01, $ };
+if (!CLEAN) { LM = await import(`./layouts/${LAYOUT}.js`); const st = document.createElement('style'); st.textContent = LM.css; document.head.appendChild(st);
+  $('ov').innerHTML = LM.html; document.body.classList.add('L-' + LAYOUT); LM.mount(ctx); }
 
 // ---------- frame ----------
 function renderAt(t) {
@@ -103,11 +88,11 @@ function renderAt(t) {
   pos = A.pos.lerp(B.pos, u); tg = A.tg.lerp(B.tg, u);
   if (i > 0 && lt < STORY.move) { const P = camAt(steps[i - 1], 'B', t), k = ease(lt / STORY.move); pos = P.pos.lerp(pos, k); tg = P.tg.lerp(tg, k); }
   cam.position.copy(pos); cam.lookAt(tg); cam.updateMatrixWorld();
-  if (!CLEAN && H <= W) { const k = i === 0 || i === steps.length - 1 ? 0.35 : 1; cam.setViewOffset(W, H, -W * 0.09 * k, H * 0.1 * k, W, H); } else cam.clearViewOffset();
+  if (LM && LM.meta.camShift && (H <= W || LM.meta.portraitShift)) { const [dx, dy] = LM.meta.camShift(i, steps.length, H > W); cam.setViewOffset(W, H, W * dx, H * dy, W, H); } else cam.clearViewOffset();
   const fd = cam.position.distanceTo(anchorAt(s.focus || s.tB, t));
   bokeh.uniforms.focus.value = fd; bokeh.uniforms.aperture.value = 0.006 / fd;
   composer.render();
-  if (!CLEAN) overlay(t, i);
+  if (LM) LM.update(t, i, ctx);
 }
 
 window.DURATION = DURATION; window.renderAt = renderAt; window.__dbg = { scene, cam, THREE, W, H };

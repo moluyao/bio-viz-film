@@ -1,3 +1,5 @@
+**English** · [中文](README.zh-CN.md)
+
 # bio-viz-film
 
 **A Claude Code skill for making professor-grade 3D biology explainer videos from code — with a built-in accuracy protocol so the animation never invents science.**
@@ -6,8 +8,15 @@
 
 Give it a textbook section, a paper figure, or a process ("secretory pathway", "exocytosis", "viral entry"). It builds a procedural cutaway cell in three.js, animates the *real* process as a pure function of time, and records it frame-by-frame into a deterministic 1080p/4K video:
 
-- **Clean mode** — pure 3D footage, no text at all (for your own voice-over / editing)
-- **Lecture mode** — an original academic layout: step number + title, textbook-wording captions, a pathway navigator, a color legend, sources and disclaimers always on screen
+Pick a layout per video (`?layout=`):
+
+| layout | what you get |
+|---|---|
+| `clean` | pure 3D footage, no page or text at all — for your own voice-over / editing |
+| `lecture` (default) | dark academic layout: step number + serif title, textbook-wording captions, pathway navigator, legend, sources |
+| `notes` | light "handout" layout: 3D on the left, every step listed on a paper sidebar — for courseware |
+| `dashboard` | live tracking panel: how many labeled molecules sit in each compartment, counted from the model itself (and labeled as such) |
+| your own | drop a `layouts/<name>.js` (meta / css / html / mount / update) and design it for the topic |
 
 ## Why another bio-viz tool
 
@@ -38,6 +47,7 @@ People's Education Press *Biology, Compulsory 1*, §3.2 "Synthesis and transport
 
 - 🎬 Videos (720p, in repo): [lecture](examples/secretion/media/secretion_lecture_720p.mp4) · [clean](examples/secretion/media/secretion_clean_720p.mp4)
 - 🎞 Full 1080p60 masters: see **Releases**
+- 🔍 Honest self-audit of organelle shapes + comparison with a viral cell video: [`examples/secretion/形态核查与对标对比.md`](examples/secretion/形态核查与对标对比.md) (Chinese)
 - 📝 The three review rounds that shaped it: [`examples/secretion/`](examples/secretion/) (in Chinese) — round 1 caught fabricated dashboard data and wrong organelle anatomy in the first prototype; round 2 caught label non-conservation and missing membrane dynamics; round 3 verdict: *usable for teaching with minor fixes* (both fixed before rendering).
 
 What the animation gets right (and what the reviews enforced):

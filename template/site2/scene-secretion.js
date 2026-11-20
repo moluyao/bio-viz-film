@@ -305,8 +305,17 @@ export function build(scene, seed = 3) {
     Object.values(P).forEach((p) => p.end());
   }
 
+  // real model state for data panels: where each labeled molecule is right now (counts, not invented numbers)
+  function census(t, T) {
+    const c = { notYet: 0, er: 0, toGolgi: 0, golgi: 0, toPM: 0, outside: 0 };
+    for (const pt of parts) { if (!pt.lab) continue; const se = erS(pt.v, T), st = tgS(pt.v, T);
+      const made = pt.i === 0 ? T.translate[0] : T.dock[0] + pt.i * 0.35;
+      if (t < made) c.notYet++; else if (t < se.b0 + 0.75 * T.erBudDur) c.er++; else if (t < se.f1) c.toGolgi++;
+      else if (t < st.b0 + 0.75 * T.tgnBudDur) c.golgi++; else if (t < st.f0 + 0.35 * T.fuseDur) c.toPM++; else c.outside++; }
+    return c;
+  }
   Object.assign(anchors, { ribosome: F.clone(), dock: Dc.clone(), lumen: home[0].clone(), exit: E.clone(), apexSite: sites[1].S.clone().addScaledVector(sites[1].nIn, 0.4), center: V(1, 0, -1) });
   anchors.riboMove = (t, T) => F.clone().lerp(Dc, ease(win(t, ...T.dock)));
   anchors.cohort = (t, T) => { const c = V(); let n = 0; for (const pt of parts) if (pt.lab) for (const [p, s] of where(pt, t, T)) { c.addScaledVector(p, s); n += s; } return n ? c.multiplyScalar(1 / n) : home[0].clone(); };
-  return { anchors, update, count: B.count, palette: PALETTE };
+  return { anchors, update, census, cohortSize: NM, count: B.count, palette: PALETTE };
 }

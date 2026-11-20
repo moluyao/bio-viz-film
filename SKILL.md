@@ -16,18 +16,25 @@ template/site2/   ← 当前引擎（v2）
   scene-*.js        程序化场景，导出 build(scene, seed) → { anchors, update(t,T), palette }
   story-*.js        故事脚本：步骤、镜头、字幕、过程时间窗、图例、出处
   vendor/           three r170 + addons（postprocessing / environments 等）
-template/tools/   （先在此目录 npm install）record.mjs 逐帧录制 · sheet2.py 样张拼图 · probe.mjs 射线探针 · hidetest.mjs 逐物体排查
+template/tools/   record.mjs 逐帧录制 · sheet2.py 样张拼图 · probe.mjs 射线探针 · hidetest.mjs 逐物体排查
 references/       accuracy-protocol.md（必读） · techniques.md · new-scene.md · science-checklist.md · pitfalls.md
 examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运输》完整示例 + 两轮审查记录
 ```
 
-## 输出形态
-| 参数 | 效果 |
-|---|---|
-| `?layout=clean` | **纯 3D 画面**，没有任何文字或版式，用于二次剪辑、配音、做背景 |
-| 默认（lecture） | 讲解版式：步骤序号 + 标题 + 课本原句、右侧通路导航（当前步高亮）、图例、底部出处与免责声明 |
-| `--size 1080x1920` | 竖版，版式自动切换到竖排布局 |
-| `?story=xxx` | 选择故事脚本（脚本里写明用哪个 scene） |
+## 输出形态（版式可选）
+| `?layout=` | 效果 | 适合 |
+|---|---|---|
+| `clean` | **纯 3D 画面，没有任何网页或文字** | 二次剪辑、配音、做背景 |
+| `lecture`（默认） | 深色学术版：步骤序号 + 衬线标题 + 课本原句、右侧通路导航、图例、底栏出处 | 讲解视频、发布 |
+| `notes` | 浅色讲义版：左侧 3D 圆角画框，右侧纸面列出全部步骤（当前步展开原句）、图例、实验数据、出处 | 课件、上课投屏 |
+| `dashboard` | 追踪仪表盘：右侧面板实时显示标记分子在各区室的个数（来自模型本身的计数，并注明不是实验值） | 科研汇报、演示"过程" |
+| 自定义 | 在 `layouts/` 新建 `<名字>.js`，导出 `meta / css / html / mount / update` 四项，用 `?layout=<名字>` 调用 | 按主题或按要求定制 |
+
+- story 里可以写 `layout: 'notes'` 设默认版式；`--size 1080x1920` 出竖版，各版式自动换成竖排布局。
+- 新版式规则：
+  - 画面上的每个数字都必须是真实的（来自出处或模型状态）；
+  - 不照抄参考视频，版式要按主题新设计；
+  - 3D 主体用 `meta.camShift` 让出文字区。
 
 录制：
 ```

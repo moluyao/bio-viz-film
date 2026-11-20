@@ -16,6 +16,7 @@ export const STORY = {
     fuse0: 61.2, fuseStagger: 0.8, fuseDur: 4.2,
     replay: [76.0, 78.3, 80.6],
   },
+  railNote: '能量：主要来自线粒体', layout: 'lecture',
   rail: ['游离核糖体', '粗面内质网', '囊泡', '高尔基体', '囊泡', '细胞膜'],
   legend: { ribosome: '核糖体', er: '粗面内质网', golgi: '高尔基体', vesicle: '运输囊泡', granuleM: '分泌囊泡（酶原颗粒）', mitoOut: '线粒体', envelope: '核膜', pm: '细胞膜',
     tracer: '³H 标记蛋白', signal: '信号肽', translocon: '内质网膜上的通道', mrna: 'mRNA', cargo: '未标记蛋白' },
