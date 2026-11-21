@@ -5,13 +5,13 @@
 export const PALETTES = {
   textbook: null, // = the scene's own PALETTE
   candy: { pm: '#ffd6e8', envelope: '#8f7bff', envelopeIn: '#6b55f0', chromatin: '#b38bff', nucleolus: '#6a3df0', er: '#2fe0b0', ribosome: '#ff4f8b', golgi: '#ffb02e',
-    vesicle: '#ffc4a8', granuleM: '#c98bff', vacuole: '#f2e1ff', mitoOut: '#ff6b5e', mitoIn: '#e0443c', mt: '#38d6ff', cyto: '#9aa7ff', cargo: '#7ff5e0', lyso: '#ff8ad8', perox: '#c6f05a', tj: '#ffffff' },
+    vesicle: '#ffc4a8', granuleM: '#c98bff', vacuole: '#f2e1ff', mitoOut: '#ff6b5e', mitoIn: '#e0443c', mt: '#38d6ff', cyto: '#9aa7ff', cargo: '#e8d6b0', lyso: '#ff8ad8', perox: '#c6f05a', tj: '#ffffff', actin: '#5ff0b0' },
   neon: { pm: '#3b4bff', envelope: '#7a5cff', envelopeIn: '#5a3cff', chromatin: '#d24bff', nucleolus: '#ff2fd0', er: '#00ffc8', ribosome: '#ff2f7a', golgi: '#ff9a00',
-    vesicle: '#ffe600', granuleM: '#b04bff', vacuole: '#e7b8ff', mitoOut: '#ff3d3d', mitoIn: '#ff7a3d', mt: '#00d5ff', cyto: '#5964c8', cargo: '#5dfff0', lyso: '#ff58c8', perox: '#b6ff3d', tj: '#ffffff' },
+    vesicle: '#38ff9c', granuleM: '#b04bff', vacuole: '#e7b8ff', mitoOut: '#ff3d3d', mitoIn: '#ff7a3d', mt: '#00d5ff', cyto: '#5964c8', cargo: '#c8c4e0', lyso: '#ff58c8', perox: '#b6ff3d', tj: '#ffffff' },
   ice: { pm: '#9fd8ff', envelope: '#2f7dff', envelopeIn: '#1f5fe0', chromatin: '#4f8dff', nucleolus: '#1a3fb8', er: '#00c8f0', ribosome: '#ff5c9c', golgi: '#36b6ff',
     vesicle: '#b8f0ff', granuleM: '#4aa8ff', vacuole: '#a8e4ff', mitoOut: '#1f9cff', mitoIn: '#1470d0', mt: '#7fe8ff', cyto: '#6f96c8', cargo: '#7ff5e8', lyso: '#7aa0ff', perox: '#b8ffe8', tj: '#ffffff' },
   sunset: { pm: '#ffe2c8', envelope: '#c75cff', envelopeIn: '#a03ce0', chromatin: '#ff6fb0', nucleolus: '#d02c7a', er: '#e8508c', ribosome: '#7a3cff', golgi: '#ff7a3c',
-    vesicle: '#ffc0d0', granuleM: '#b45cff', vacuole: '#ead2ff', mitoOut: '#ff4a6a', mitoIn: '#d8304f', mt: '#ffc06a', cyto: '#d8a0a8', cargo: '#ffe9a0', lyso: '#c04aa0', perox: '#ffd86a', tj: '#ffffff' },
+    vesicle: '#ffc0d0', granuleM: '#b45cff', vacuole: '#ead2ff', mitoOut: '#ff4a6a', mitoIn: '#d8304f', mt: '#ffc06a', cyto: '#b3a08c', cargo: '#d8c8a8', lyso: '#c04aa0', perox: '#ffd86a', tj: '#ffffff' },
 };
 export const LOOKS = {
   academic: { bg: ['#16213d', '#0a1022', '#05070f'], fog: 0x0a1022, exposure: 1.05, hemi: [0xa9bcff, 0x1a1c28, 0.7], key: 2.6, rim: 1.6, bloom: [0.32, 0.35, 0.95], palette: 'textbook', glow: 0 },

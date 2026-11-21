@@ -86,12 +86,23 @@ export const fbm = (x, y, z, o = 3) => { let a = 0, w = 0.5, f = 1; for (let i =
 
 // grid surface: fn(i/nu, j/nv) -> {p:Vector3, keep:bool}; faces with any dropped corner are removed
 export function gridGeometry(nu, nv, fn, wrapV = false) {
-  const pos = new Float32Array((nu + 1) * (nv + 1) * 3), ok = new Uint8Array((nu + 1) * (nv + 1)), idx = [];
-  for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const r = fn(i / nu, j / nv), k = i * (nv + 1) + j; if (r) { pos[k * 3] = r.p.x; pos[k * 3 + 1] = r.p.y; pos[k * 3 + 2] = r.p.z; ok[k] = r.keep === false ? 0 : 1; } }
+  const n = (nu + 1) * (nv + 1), pos = new Float32Array(n * 3), ok = new Uint8Array(n), kv = new Float32Array(n).fill(1), idx = []; let hasK = false;
+  for (let i = 0; i <= nu; i++) for (let j = 0; j <= nv; j++) { const r = fn(i / nu, j / nv), k = i * (nv + 1) + j; if (!r) continue;
+    pos[k * 3] = r.p.x; pos[k * 3 + 1] = r.p.y; pos[k * 3 + 2] = r.p.z;
+    if (r.k !== undefined) { hasK = true; ok[k] = 1; kv[k] = r.k; } else ok[k] = r.keep === false ? 0 : 1; }
   for (let i = 0; i < nu; i++) for (let j = 0; j < nv; j++) { if (!wrapV && j === nv) continue;
     const a = i * (nv + 1) + j, b = a + 1, c = a + nv + 1, d = c + 1;
-    if (ok[a] && ok[b] && ok[c] && ok[d]) idx.push(a, c, b, b, c, d); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
+    if (ok[a] && ok[b] && ok[c] && ok[d] && Math.max(kv[a], kv[b], kv[c], kv[d]) >= 0) idx.push(a, c, b, b, c, d); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); if (hasK) g.setAttribute('aKeep', new THREE.BufferAttribute(kv, 1));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+// material that discards fragments where the interpolated keep value < 0 (smooth hole / rim outlines)
+export function keepify(m) {
+  const prev = m.onBeforeCompile, pk = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
+  m.onBeforeCompile = (sh, r) => { if (prev) prev.call(m, sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute float aKeep; varying float vKeep;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvKeep = aKeep;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vKeep;').replace('#include <clipping_planes_fragment>', 'if (vKeep < 0.0) discard;\n#include <clipping_planes_fragment>'); };
+  m.customProgramCacheKey = () => pk + '|keep'; return m;
 }
 // capsule bent along a curve (mitochondria): radius profile closes smoothly at both ends
 export function bentCapsule(curve, r, rings = 64, seg = 20) {

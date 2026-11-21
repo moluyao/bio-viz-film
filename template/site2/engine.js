@@ -42,6 +42,7 @@ const key = new THREE.DirectionalLight(0xfff1df, LOOK.key); key.position.set(-14
 const rim = new THREE.DirectionalLight(0x7fb6ff, LOOK.rim); rim.position.set(18, 22, 4); scene.add(rim);
 const fill = new THREE.DirectionalLight(0xffc2d6, 0.5); fill.position.set(10, -30, 8); scene.add(fill);
 
+globalThis.__bvOpts = { density: Number(Q.get('density') || STORY.density || 1) };
 const world = SC.build(scene, Number(Q.get('seed') || 3));
 const PAL0 = Q.get('palette') || STORY.palette || LOOK.palette;
 if (world.setPalette) world.setPalette(PALETTES[PAL0], LOOK.glow);

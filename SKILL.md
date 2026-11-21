@@ -57,6 +57,7 @@ examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运
 node tools/record.mjs site2 out/x_clean.mp4  --size 1920x1080 --dpr 2 --scale 1920x1080 --query "story=secretion&layout=clean"
 node tools/record.mjs site2 out/x_lecture.mp4 --size 1920x1080 --dpr 2 --scale 1920x1080 --query "story=secretion"
 ```
+`--draft`（1 倍、30fps，约 1/8 时间）先出预览档给用户确认，再录正片。录制器会加锁防止两个进程同时写同一个文件；先写 `*.partial.mp4`，完成后才改名；最后自动逐帧解码校验，有错误就报出来。
 `--dpr 2 --scale 1920x1080` 的意思是：先按 2 倍分辨率渲染，再缩回 1080p，相当于超采样抗锯齿。要 4K 成片就去掉 `--scale`。
 
 ## 流程（每一步都不能跳过）
