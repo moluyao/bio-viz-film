@@ -16,6 +16,7 @@ template/site2/   ← 当前引擎（v2）
   scene-*.js        程序化场景，导出 build(scene, seed) → { anchors, update(t,T), palette }
   story-*.js        故事脚本：步骤、镜头、字幕、过程时间窗、图例、出处
   vendor/           three r170 + addons（postprocessing / environments 等）
+template/site/    ← v1 旧引擎（仪表盘风格，细胞/病毒；已知科学问题见 references/pitfalls.md，不建议再用）
 template/tools/   record.mjs 逐帧录制 · sheet2.py 样张拼图 · probe.mjs 射线探针 · hidetest.mjs 逐物体排查
 references/       accuracy-protocol.md（必读） · techniques.md · new-scene.md · science-checklist.md · pitfalls.md
 examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运输》完整示例 + 五轮审查记录
@@ -28,6 +29,7 @@ examples/         secretion：人教版必修1 3.2《分泌蛋白的合成和运
 | `lecture`（默认） | 深色学术版：步骤序号 + 衬线标题 + 课本原句、右侧通路导航、图例、底栏出处 | 讲解视频、发布 |
 | `notes` | 浅色讲义版：左侧 3D 圆角画框，右侧纸面列出全部步骤（当前步展开原句）、图例、实验数据、出处 | 课件、上课投屏 |
 | `dashboard` | 追踪仪表盘：右侧面板实时显示标记分子在各区室的个数（来自模型本身的计数，并注明不是实验值） | 科研汇报、演示"过程" |
+| `bench` | **浅色实验台网页**（对标爆款的仪表盘风）：顶栏（视场、步骤、模型时钟）+ 跑马灯真知识 + 带框 3D 窗口（标签用十字准星钉在 3D 结构上、实时比例尺）+ 模型计数条 + 步骤条 + 三张小图卡（典型值曲线 / 模型计数曲线 / 课本示意）。竖版 1080×1350 最佳 | 发推特、小红书的网页版 |
 | 自定义 | 在 `layouts/` 新建 `<名字>.js`，导出 `meta / css / html / mount / update` 四项，用 `?layout=<名字>` 调用 | 按主题或按要求定制 |
 
 - story 里可以写 `layout: 'notes'` 设默认版式；`--size 1080x1920` 出竖版，各版式自动换成竖排布局。
@@ -85,6 +87,27 @@ node tools/record.mjs site2 out/x_lecture.mp4 --size 1920x1080 --dpr 2 --scale 1
 - 交付物：纯画面版 + 讲解版两条 mp4，加上事实表和两轮审查记录。
 - 发布时附中英文文案；不混 BGM。
 
+## 网页版（bench）要点
+- story 里写 `layout: 'bench'`，并提供 `brand / title / sub / notes（跑马灯，必须是有出处的事实）/ clock（胶片秒→生理毫秒）/ conv（每步高亮哪种信号）`，每步写 `chip / badge / call（标注：锚点、标题、副标题、要点）`。
+- 页面上的数字只允许三种来源，并在卡片角标注明：`MODEL`（场景 census 计数）、`TYPICAL`（教科书典型值）、`TEXTBOOK`。比例尺和视场由相机实时算。不要写 LIVE / 实时显微之类会被误认为真实数据的字样。
+- 模型时钟要和字幕、曲线一致；放慢倍数写真实范围（非线性就写非线性）。
+
+## 近景"切片模式"与膜厚度
+- `STORY.slab(t)`：第二个全局裁剪面（只保留 z ≥ 值），近景时把场景切成约 50–100 nm 厚的切片，像电镜切片一样干净。
+- 膜用 `shell()` 做成有厚度的闭合双层（外层朝外、内层朝内，5 nm），材质 `capify`，切口显示成实心色带；关键事件（融合孔、内吞小窝）放在剖切面上，相机接近正俯视，Ω 形轮廓才看得清。
+- 远景里分子/离子按相机距离放大显示（`__camDist`），页脚注明"远景分子放大"。
+
+## 两条出片路线（详见 references/two-routes.md）
+- **快速路线**：three.js 实时渲染（加 N8AO 环境光遮蔽），49 秒的片子约 15 分钟出完，用于迭代和日常出片。
+- **专业路线**：`export_blender.mjs` 导出场景 → `blender_build.py` 在 Blender 里重建，用 Cycles 路径追踪渲染 → `record.mjs --overlay-dir` 生成网页界面层，再叠加上去。本机约 17–20 秒/帧，用于最终发布版。
+- 同一时间只能跑一个 Blender 任务，两个会内存不足、直接崩溃。
+
+## 分子级"珠串风格"（不简化：用真实结构）
+- `tools/pdb2beads.py <PDB> site2/mol/<PDB>.json [--opm] [--group 链]`：把真实的原子结构变成珠子模型。膜蛋白加 `--opm`，用 OPM 数据库的膜内定向。
+- 场景顶层 `await fetch('./mol/*.json')`，用 `beadGeo()` 生成几何。剖切面以上的珠子整颗丢掉，不留半个空壳。
+- 摆放时做珠子级碰撞检测，保证 0 穿模；`node tools/check.mjs site2 "story=..."` 复查。
+- 计数要按化学计量自洽（例：1 个 O₂ 对应 PSII 吸收 4 个光子、PSI 吸收 4 个光子，传递 4 个电子，类囊体腔进 12 个 H⁺，生成 2 个 NADPH，约 2.6 个 ATP）。示意性的连续动画要单独标注 ILLUSTRATIVE。
+
 ## 形态原则（不简化）
 - 细胞器**按电镜真实形态和比例**建模，不画成规整几何体。尺寸先查表（`references/morphology-acinar.md` 的写法），再写代码。
 - 跨三个数量级（细胞 15 μm → 核糖体 25 nm）时不缩放结构，而是让相机连续推近（对数距离插值），分子事件放在近景里看。
@@ -97,4 +120,6 @@ node tools/record.mjs site2 out/x_lecture.mp4 --size 1920x1080 --dpr 2 --scale 1
 - 引用和免责声明常驻底栏：示意动画 · 非真实比例 · 时间已压缩 · 出处。
 
 ## 已完成示例
+- `thylakoid`：叶绿体 → 基粒 → 类囊体膜上的光反应，9 种真实蛋白结构（PSII-LHCII、b₆f、PSI、ATP 合酶、LHCII、PC、Fd、FNR、Rubisco），英文 bench 网页版 `story=thylakoid-en`，快速和专业两条路线都出过片。
+- `synapse`：海马谷氨酸能突触（轴突串珠 → 蘑菇状树突棘），真实比例 1 单位 = 20 nm，动作电位 → Ca²⁺ 内流 → 单个小泡完全塌陷融合 → ~4,000 谷氨酸扩散 → AMPA 开放、Na⁺ 内流 → 星形胶质摄取 → 网格蛋白内吞与再装填。英文 bench 网页版 `story=synapse-en`，约 50 秒。事实表与审查见 `examples/synapse/`。
 - `secretion`：豚鼠胰腺腺泡细胞，分泌蛋白从游离核糖体到胞吐的全过程，约 75 秒，共 9 步，含 ³H-亮氨酸实验的时间线（3/17/117 min，课本数据）。

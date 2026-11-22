@@ -41,7 +41,14 @@ const CLIP = { x: 0, y: 0, width: W, height: H, scale: DPR };
 const shot = async (fmt = 'jpeg') => Buffer.from((await cdp.send('Page.captureScreenshot', { format: fmt, quality: 95, optimizeForSpeed: true, clip: CLIP })).data, 'base64');
 const frame = (t) => page.evaluate((tt) => { window.renderAt(tt); return new Promise((r) => requestAnimationFrame(() => r())); }, t);
 
-if (stills) {
+const OVL = process.argv.includes('--overlay-dir') ? process.argv[process.argv.indexOf('--overlay-dir') + 1] : null;
+if (OVL) { // UI layer only (transparent where the 3D goes), PNG per frame — to composite over externally rendered frames (Blender route)
+  fs.mkdirSync(OVL, { recursive: true }); await cdp.send('Emulation.setDefaultBackgroundColorOverride', { color: { r: 0, g: 0, b: 0, a: 0 } });
+  const total = Math.round(DURATION * FPS);
+  for (let f = 0; f < total; f++) { await frame(f / FPS); fs.writeFileSync(path.join(OVL, String(f).padStart(5, '0') + '.png'), await shot('png')); if (f % 48 === 0) process.stdout.write(`
+overlay ${f}/${total}`); }
+  console.log('overlay ->', path.resolve(OVL));
+} else if (stills) {
   fs.mkdirSync(stillDir, { recursive: true });
   for (const s of stills.split(',').map(Number)) { await frame(s); fs.writeFileSync(path.join(stillDir, `t${s.toFixed(2).padStart(5, '0')}.png`), await shot('png')); }
   console.log('stills ->', path.resolve(stillDir));

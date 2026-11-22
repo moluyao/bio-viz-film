@@ -47,9 +47,11 @@ const q = (s) => document.querySelector(s);
 export function mount(ctx) {
   const { STORY, steps, DURATION, world } = ctx;
   q('.D-h').textContent = STORY.course; q('.D-title').textContent = STORY.title;
-  q('.D-foot').innerHTML = `${STORY.footnote}<br>计数来自动画模型本身（${world.cohortSize || ''} 个示意分子），不是实验测量值<br>${STORY.sources}`;
-  q('.D-n').textContent = `模型内计数 / ${world.cohortSize}`;
-  q('.D-rows').innerHTML = ROWS.map(([k, n]) => `<div class="D-row" data-k="${k}"><span>${n}</span><div class="bar"><i></i></div><b>0</b></div>`).join('');
+  const UI = STORY.ui || {};
+  q('.D-foot').innerHTML = `${STORY.footnote}<br>${UI.countNote ? UI.countNote + (UI.pseudo ? ' · ' + UI.pseudo : '') : `计数来自动画模型本身（${world.cohortSize || ''} 个示意分子），不是实验测量值`}<br>${STORY.sources}`;
+  q('.D-n').textContent = `${UI.count || '模型内计数'} / ${world.cohortSize}`;
+  if (UI.live) q('.D-card h5').firstChild.textContent = UI.live + ' ';
+  q('.D-rows').innerHTML = ROWS.map(([k, n]) => `<div class="D-row" data-k="${k}"><span>${(UI.rows && UI.rows[k]) || n}</span><div class="bar"><i></i></div><b>0</b></div>`).join('');
   const tr = q('.D-track'); steps.forEach((s) => { const d = document.createElement('div'); d.className = 'tk'; d.style.left = (s.t0 / DURATION * 100) + '%'; tr.appendChild(d); });
   ctx.ticks = [...tr.querySelectorAll('.tk')];
 }

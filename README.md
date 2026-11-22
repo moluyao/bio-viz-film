@@ -19,6 +19,27 @@ Pick a layout per video (`?layout=`):
 | `dashboard` | live tracking panel: how many labeled molecules sit in each compartment, counted from the model itself (and labeled as such) |
 | your own | drop a `layouts/<name>.js` (meta / css / html / mount / update) and design it for the topic |
 
+## v4: real protein structures, two render routes (new)
+
+<p><img src="examples/thylakoid/media/cover_h.jpg" width="62%"> <img src="examples/thylakoid/media/cover_v.jpg" width="30%"></p>
+
+New case: **the light reactions of photosynthesis on the thylakoid membrane** (high-school textbook level, English on-screen text).
+
+| | |
+|---|---|
+| Pro route (Blender Cycles, path-traced) | [`thylakoid_pro_720p.mp4`](examples/thylakoid/media/thylakoid_pro_720p.mp4) |
+| Quick route vs Pro route, side by side | [`thylakoid_quick_vs_pro_720p.mp4`](examples/thylakoid/media/thylakoid_quick_vs_pro_720p.mp4) |
+| 1080p masters (with soundtrack) | [Release v4.0](https://github.com/moluyao/bio-viz-film/releases/tag/v4.0) |
+
+- **Every protein is a real atomic structure.** `tools/pdb2beads.py` downloads PDB/mmCIF (RCSB), or the membrane-oriented version from the **OPM** database, and coarse-grains it into 0.6 / 1.4 nm beads, with chlorophyll, carotenoid and metal clusters coloured by class. It also exports key sites (Mn cluster, quinone sites, hemes, Fe–S clusters) so the process animation starts from the real positions. The film uses 9 structures: PSII–LHCII, b₆f, PSI, ATP synthase (rotor chains tagged so the c₁₄ ring really turns), LHCII, plastocyanin, ferredoxin, FNR and Rubisco.
+- **Zero intersections, checked:** placement uses a bead-level collision grid, and `tools/check.mjs` re-checks every bead of every molecule (2,459 molecules → 0 overlapping pairs).
+- **Two routes, one scene:**
+  - **Quick route:** three.js + N8AO ambient occlusion, about 15 min for a 49 s film.
+  - **Pro route:** the same scene is exported (`tools/export_blender.mjs`), rebuilt in Blender with geometry nodes and Cycles point clouds (`tools/blender_build.py`), path-traced with GPU denoising, and the web dashboard is composited back on top (`record.mjs --overlay-dir`). It runs at about 4 s/frame on a laptop iGPU after tuning: GPU-only, denoise on the GPU. See `references/two-routes.md`.
+- **New layout `bench`:** a light "lab instrument" page with a framed live 3D window, reticle callouts pinned to 3D anchors, a scale bar measured from the camera, model counters, and cards tagged MODEL / TYPICAL / TEXTBOOK. Every number on the page has a stated origin.
+- **Science review:** an independent review found inconsistent counters and pH timing; both were fixed. The counters now follow one O₂ worth of stoichiometry: 8 photons, 4 e⁻, 12 H⁺, 2 NADPH, ~2.6 ATP.
+- Also new: a chemical-synapse case (`scene-synapse.js`, bench layout), original synthesized soundtracks timed to each film's events (`tools/bgm_*.py`), and an NPU (OpenVINO) feasibility test for AI frame interpolation (it runs, but the quality wasn't good enough, so it isn't used).
+
 ## v3: true proportions + Showreel mode
 
 - **No simplified organelles.** Every structure follows EM data at true proportions (1 unit = 0.5 µm): pyramidal acinar cells forming an acinus, 16 parallel RER cisternae studded with 25 nm ribosomes, 6-cisterna Golgi stacks with dilated fenestrated rims, condensing vacuoles (Ø ~1.5 µm) maturing into ~0.9 µm zymogen granules, cristae-filled mitochondria, 100 nm microvilli. The camera zooms continuously over three orders of magnitude instead of rescaling anything. Dimension table: `references/morphology-acinar.md`.

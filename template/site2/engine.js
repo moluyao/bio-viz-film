@@ -9,6 +9,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { N8AOPass } from 'three/addons/N8AO.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { ease, clamp01, win } from './lib.js';
 import { LOOKS, PALETTES, CHANNEL_CYCLE } from './looks.js';
@@ -16,6 +17,7 @@ import { LOOKS, PALETTES, CHANNEL_CYCLE } from './looks.js';
 const Q = new URLSearchParams(location.search);
 const { STORY } = await import(`./story-${Q.get('story') || 'secretion'}.js`);
 const SC = await import(`./scene-${STORY.scene}.js`);
+if (Q.has('uionly')) { window.__noRender = true; const st = document.createElement('style'); st.textContent = 'html,body,body.L-bench{background:transparent!important} canvas{visibility:hidden}'; document.head.appendChild(st); }
 const W = innerWidth, H = innerHeight, DPR = Number(Q.get('dpr') || Math.min(2, devicePixelRatio));
 const CLEAN = Q.get('layout') === 'clean';
 document.body.classList.toggle('clean', CLEAN);
@@ -27,7 +29,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, preserveDrawingBuff
 renderer.setPixelRatio(DPR); renderer.setSize(W, H);
 const LOOK = LOOKS[Q.get('look') || STORY.look || 'academic'];
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = LOOK.exposure;
-const cutPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.8); renderer.clippingPlanes = [cutPlane]; renderer.localClippingEnabled = true;
+const cutPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0.8); const slabPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 1e4); renderer.clippingPlanes = [cutPlane, slabPlane]; renderer.localClippingEnabled = true;
 document.body.prepend(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -53,7 +55,9 @@ const cam = new THREE.PerspectiveCamera(30, W / H, 0.02, 400); cam.up.set(0, 0, 
 // ---------- post ----------
 const rt = new THREE.WebGLRenderTarget(W * DPR, H * DPR, { type: THREE.HalfFloatType, samples: 4 });
 const composer = new EffectComposer(renderer, rt);
-composer.addPass(new RenderPass(scene, cam));
+// ambient occlusion (N8AO) for dense bead/molecular scenes: story.ao = { r: radius as a fraction of camera distance, i: intensity }
+const n8 = STORY.ao && !Q.has('noao') ? new N8AOPass(scene, cam, W * DPR, H * DPR) : null;
+if (n8) { n8.configuration.intensity = STORY.ao.i ?? 3; n8.configuration.aoSamples = 16; n8.configuration.denoiseSamples = 8; n8.configuration.halfRes = false; n8.configuration.gammaCorrection = false; n8.configuration.screenSpaceRadius = false; composer.addPass(n8); } else composer.addPass(new RenderPass(scene, cam));
 const gtao = new GTAOPass(scene, cam, W, H);
 gtao.updateGtaoMaterial({ radius: Number(Q.get('aor') || 0.25), distanceExponent: 1.4, thickness: Number(Q.get('aot') || 0.4), scale: 1.0, samples: 16 }); gtao.blendIntensity = 0.8; if (Q.has('aoout')) gtao.output = Number(Q.get('aoout'));
 if (Q.has('gtao')) composer.addPass(gtao);
@@ -96,7 +100,7 @@ const stepAt = (t) => { const i = steps.findIndex((s) => t < s.t1); return i < 0
 const $ = (id) => document.getElementById(id);
 const PAL = world.palette;
 const LAYOUT = Q.get('layout') || STORY.layout || 'lecture';
-let LM = null; const ctx = { STORY, steps, DURATION, PAL, world, ease, win, clamp01, $ };
+let LM = null; const ctx = { STORY, steps, DURATION, PAL, world, ease, win, clamp01, $, cam, anchorAt, W, H };
 if (!CLEAN) { LM = await import(`./layouts/${LAYOUT}.js`); const st = document.createElement('style'); st.textContent = LM.css; document.head.appendChild(st);
   $('ov').innerHTML = LM.html; document.body.classList.add('L-' + LAYOUT); LM.mount(ctx); }
 
@@ -104,8 +108,8 @@ if (!CLEAN) { LM = await import(`./layouts/${LAYOUT}.js`); const st = document.c
 function renderAt(t) {
   t = Math.min(Math.max(t, 0), DURATION - 1e-4);
   const i = stepAt(t), s = steps[i], lt = t - s.t0;
+  slabPlane.constant = STORY.slab ? -STORY.slab(t) : 1e4;
   const c = STORY.cut; cutPlane.constant = c.from + (c.to - c.from) * ease(win(t, c.t0, c.t1));
-  world.update(t, STORY.T);
   let pos, tg;
   const A = camAt(s, 'A', t), B = camAt(s, 'B', t);
   const st = i > 0 ? s.t0 + STORY.move : s.t0, u = clamp01((t - st) / (s.t1 - st));
@@ -115,10 +119,16 @@ function renderAt(t) {
   pos = cc.pos; tg = cc.tg;
   const dist = pos.distanceTo(tg); cam.near = Math.max(0.0008, dist * 0.015); cam.far = Math.max(60, dist * 60); cam.updateProjectionMatrix();
   cam.position.copy(pos); cam.lookAt(tg); cam.updateMatrixWorld();
+  globalThis.__camDist = dist; world.update(t, STORY.T);
+  if (STORY.fogRel) scene.fog.density = Q.has('nofog') ? 0 : STORY.fogRel / dist; else if (0) scene.fog.density = STORY.fogRel / dist;
+  if (n8) { n8.configuration.aoRadius = dist * (STORY.ao.r ?? 0.02); n8.configuration.distanceFalloff = n8.configuration.aoRadius * 0.6; }
   if (LM && LM.meta.camShift && (H <= W || LM.meta.portraitShift)) { const [dx, dy] = LM.meta.camShift(i, steps.length, H > W); cam.setViewOffset(W, H, W * dx, H * dy, W, H); } else cam.clearViewOffset();
   const fd = cam.position.distanceTo(anchorAt(s.focus || s.tB, t));
+  if (globalThis.__beadCut) globalThis.__beadCut.value = cutPlane.constant;
+  window.__fd = fd; window.__cutZ = cutPlane.constant; window.__slab = slabPlane.constant;
   bokeh.uniforms.focus.value = fd; bokeh.uniforms.aperture.value = 0.006 / fd;
   const noFx = STORY.noFx || [], chI = FX === 'channels' ? i - noFx.filter((k) => k <= i).length : 0, wipe = FX === 'channels' && i > 0 && !noFx.includes(i) ? clamp01((lt - 0.3) / 1.1) : 1;
+  if (window.__noRender) { if (LM) LM.update(t, i, ctx); return; }
   if (FX === 'channels' && wipe > 0 && wipe < 1) {
     composer.renderToScreen = false;
     world.setPalette(PALETTES[chanOf(chI - 1)], LOOK.glow); composer.render();
@@ -132,7 +142,7 @@ function renderAt(t) {
   if (LM) LM.update(t, i, ctx);
 }
 
-window.DURATION = DURATION; window.renderAt = renderAt; window.__dbg = { scene, cam, THREE, W, H };
+window.DURATION = DURATION; window.renderAt = renderAt; window.__world = world; window.__dbg = { scene, cam, THREE, W, H };
 renderer.compile(scene, cam); renderAt(Number(Q.get('t') || 0)); window.__ready = true;
 if (!Q.has('record') && !Q.has('t')) {
   const t0 = performance.now(); let paused = false, off = 0, pt = 0;

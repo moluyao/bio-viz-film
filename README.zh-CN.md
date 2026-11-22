@@ -22,6 +22,30 @@
 | `dashboard` | 追踪仪表盘：实时显示标记分子在各区室的个数。数字来自模型本身，画面上注明不是实验值 |
 | 自定义 | 在 `layouts/` 里新写一个版式文件，按主题或按要求设计 |
 
+## v4：真实蛋白结构 + 两条出片路线（新）
+
+<p><img src="examples/thylakoid/media/cover_h.jpg" width="62%"> <img src="examples/thylakoid/media/cover_v.jpg" width="30%"></p>
+
+新案例：**类囊体膜上的光反应**（人教版必修1 5.4 光合作用，画面文字为英文）。
+
+| | |
+|---|---|
+| 专业路线（Blender Cycles 路径追踪） | [`thylakoid_pro_720p.mp4`](examples/thylakoid/media/thylakoid_pro_720p.mp4) |
+| 快速路线 vs 专业路线 左右对比 | [`thylakoid_quick_vs_pro_720p.mp4`](examples/thylakoid/media/thylakoid_quick_vs_pro_720p.mp4) |
+| 1080p 原片（带配乐） | [Release v4.0](https://github.com/moluyao/bio-viz-film/releases/tag/v4.0) |
+
+- **每个蛋白都是真实的原子结构**：`tools/pdb2beads.py` 从 RCSB 下载结构（膜蛋白用 **OPM** 数据库里已经定好方向的版本），聚成 0.6 / 1.4 nm 的珠子，叶绿素、类胡萝卜素、金属簇按类别上色。它还导出关键位点（Mn 簇、醌位点、血红素、Fe–S 簇），过程动画就从这些真实位置出发。片中共 9 种结构：PSII–LHCII、b₆f、PSI、ATP 合酶（标出转子链，c₁₄ 环真的会转）、LHCII、质体蓝素、铁氧还蛋白、FNR、Rubisco。
+- **0 穿模**：摆放时逐颗珠子做碰撞检测，`tools/check.mjs` 再复查一遍（2,459 个分子，重叠 0 对）。
+- **同一场景，两条路线出片**：
+  - **快速路线**：three.js + N8AO 环境光遮蔽，49 秒的片子约 15 分钟出完。
+  - **专业路线**：先用 `export_blender.mjs` 导出场景，再用 `blender_build.py` 在 Blender 里用几何节点和 Cycles 点云重建，GPU 路径追踪加 GPU 降噪，最后把网页界面叠回去（`record.mjs --overlay-dir`）。调优后（只用 GPU、降噪也放 GPU）笔记本核显约 4 秒一帧，详见 `references/two-routes.md`。
+- **新版式 `bench`**：浅色"实验台"网页，包括带框的 3D 窗口、钉在 3D 结构上的准星标注、由相机实时算出的比例尺、模型计数，以及标了 MODEL / TYPICAL / TEXTBOOK 来源的小卡片。
+- **科学审查**：独立审查指出计数前后矛盾、pH 变化时机不对，都已改正。现在计数按产生 1 个 O₂ 的化学计量走：8 个光子、4 个电子、12 个 H⁺、2 个 NADPH、约 2.6 个 ATP。
+- 另外新增：
+  - 化学突触案例（`scene-synapse.js`，bench 版式）；
+  - 按画面节点合成的原创配乐（`tools/bgm_*.py`）；
+  - NPU（OpenVINO）AI 补帧可行性测试：能跑，但画质不达标，未采用。
+
 ## v3：真实比例 + 炫片模式
 
 - **细胞器不简化**：所有结构都按电镜资料的真实形态和比例建模（1 单位 = 0.5 µm），尺寸表见 `references/morphology-acinar.md`，包括：

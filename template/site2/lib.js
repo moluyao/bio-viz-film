@@ -116,3 +116,14 @@ export function ribosomeGeometry(scale) {
   const g = new THREE.BufferGeometry(), pa = a.attributes.position.array, pb = b.attributes.position.array, p = new Float32Array(pa.length + pb.length); p.set(pa); p.set(pb, pa.length);
   g.setAttribute('position', new THREE.BufferAttribute(p, 3)); g.computeVertexNormals(); return g;
 }
+
+// cut faces of closed shells render as flat "section" caps (darker), so a cut membrane reads as a solid band like in EM
+export function capify(m, k = 0.62) { const prev = m.onBeforeCompile, pk = m.customProgramCacheKey ? m.customProgramCacheKey() : '';
+  m.onBeforeCompile = (sh, r) => { if (prev) prev.call(m, sh, r); sh.fragmentShader = sh.fragmentShader
+    .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n if (!gl_FrontFacing) { normal = normalize((viewMatrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz); }')
+    .replace('#include <color_fragment>', '#include <color_fragment>\n if (!gl_FrontFacing) diffuseColor.rgb *= ' + k.toFixed(2) + ';'); };
+  m.customProgramCacheKey = () => pk + '|cap' + k; return m; }
+// flip triangle winding (indexed or not)
+export function flipWinding(g) { if (g.index) { const ix = g.index.array; for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; } }
+  else for (const k of Object.keys(g.attributes)) { const a = g.attributes[k], n = a.itemSize, ar = a.array; for (let i = 0; i < a.count; i += 3) for (let c = 0; c < n; c++) { const t = ar[(i + 1) * n + c]; ar[(i + 1) * n + c] = ar[(i + 2) * n + c]; ar[(i + 2) * n + c] = t; } }
+  g.computeVertexNormals(); return g; }

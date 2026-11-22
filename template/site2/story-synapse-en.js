@@ -1,0 +1,52 @@
+// Story: how a signal crosses a chemical synapse (glutamatergic synapse onto a dendritic spine) — English, web "bench" layout.
+// Textbook anchor: 人教版 选择性必修1《稳态与调节》2.3（兴奋在神经元之间的传递）; university-level details are in review/事实表_突触.md.
+const C = (a, t, s, b) => ({ a, t, s, b });
+export const STORY = {
+  id: 'synapse-en', scene: 'synapse', layout: 'bench', look: 'vivid', palette: 'textbook', fog: 0.0003, portraitZoom: 1,
+  brand: 'SynapseScope', title: 'Chemical synapse', sub: 'hippocampal neuropil · 3D model section',
+  footnote: 'Animation · true scale from EM data (1 unit = 20 nm) · time slowed ~4,000–15,000× (non-linear), recycling compressed further · ions thinned · molecules enlarged in wide shots · pseudo-colours',
+  sources: 'Sources: PEP Biology (Sel. Comp. 1) §2.3 · Harris & Weinberg 2012 · Schikorski & Stevens 1997 · Clements 1992/1996 · Borst & Sakmann 1998 · Südhof 2013 · Watanabe 2013',
+  cut: { from: 0.8, to: 0.8, t0: 0, t1: 1 },
+  move: 1.8,
+  // thin-section mode for close-ups (like an EM section ~85 nm thick): lower clipping plane z ≥ -3.5 during steps 5–8
+  slab: (t) => (t < 22.2 || t > 45.6 ? -1e4 : t < 23.2 ? -60 + 56.5 * Math.min(1, (t - 22.2) / 1.0) ** 2 : t > 44.4 ? -3.5 - 56.5 * ((t - 44.4) / 1.2) ** 2 : -3.5),
+  T: { ap: [17.3, 19.6], flash: [19.3, 20.5], ca: [20.0, 22.4], fuse: [23.3, 25.2], open0: 24.1, clear: [30, 36],
+    endo: [39.4, 42.4], uncoat: [42.4, 43.3], refill: [43.0, 44.8], dock: [39.8, 43.6] },
+  // model clock: film seconds → physiological time (ms). null = not shown
+  clock: [[17.3, -0.2], [19.6, 0.25], [20.0, 0.33], [22.4, 0.5], [23.3, 0.55], [25.2, 0.75], [27, 1.0], [31, 1.6], [34, 2.2], [38.95, 3.6]],
+  clock2: [[38.96, 8000], [45, 20000]],
+  notes: ['Synaptic cleft ≈ 20 nm wide', 'A synaptic vesicle is ≈ 40 nm across and holds ≈ 4,000 glutamate', 'A hippocampal bouton holds ≈ 200 vesicles, ≈ 10 docked',
+    'Synaptic delay ≈ 0.5 ms', 'Glutamate clears from the cleft in ≈ 1–2 ms', 'Clathrin endocytosis takes ≈ 10–20 s (faster routes also exist)', '1 mm³ of cortex holds ~10⁹ synapses'],
+  legend: { axon: 'Axon / terminal', den: 'Dendrite / spine', astro: 'Astrocyte', vesicle: 'Synaptic vesicle', glu: 'Glutamate', ca: 'Ca²⁺', na: 'Na⁺', ampa: 'AMPA receptor',
+    psd: 'Postsynaptic density', mitoOut: 'Mitochondrion', vgcc: 'Ca²⁺ channel', clathrin: 'Clathrin coat', eaat: 'Glutamate transporter', ap: 'Action potential' },
+  conv: [-1, -1, -1, 0, 1, 2, 1, 1, 3], // signal-conversion highlight per step: 0 electrical(pre) 1 chemical 2 electrical(post) 3 all
+  steps: [
+    { dur: 6, tA: 'tissue', offA: [-20, -260, 720], tB: 'tissue', offB: [-10, -170, 470], focus: 'tissue', chip: 'Tissue',
+      title: 'A slice of brain tissue', text: ['Axons, dendrites and astrocytes packed together,', 'cut open like an electron-microscope section.'],
+      call: C('syn', 'Synapse', 'axon → spine', ['one of ~10⁹ per mm³']), badge: 'SECTION', legend: ['axon', 'den', 'astro', 'vesicle'] },
+    { dur: 6, tA: 'syn', offA: [0, -120, 260], tB: 'syn', offB: [0, -80, 170], focus: 'syn', chip: 'Synapse',
+      title: 'One synapse', text: ['An axon terminal meets a dendritic spine.', 'Between them: the synaptic cleft, about 20 nm wide.'],
+      call: C('cleft', 'Synaptic cleft', '≈ 20 nm', ['presynaptic membrane ← left', 'postsynaptic membrane → right']), badge: 'APPROACH', legend: ['axon', 'den', 'astro', 'psd', 'mitoOut'] },
+    { dur: 5, tA: 'bouton', offA: [0, -50, 90], tB: 'vesCut', offB: [0, -18, 30], focus: 'vesCut', chip: 'Vesicles',
+      title: 'Inside the terminal', text: ['About 200 synaptic vesicles, each ≈ 40 nm across,', 'each holding ≈ 4,000 glutamate molecules.'],
+      call: C('vesCut', 'Synaptic vesicle', 'Ø ≈ 40 nm', ['≈ 4,000 glutamate']), badge: 'VESICLES', legend: ['vesicle', 'glu', 'mitoOut'] },
+    { dur: 6, tA: 'apView', offA: [0, -80, 150], tB: 'az', offB: [0, -7, 30], focus: 'az', chip: 'Ca²⁺ in',
+      title: 'An action potential arrives', text: ['The electrical signal reaches the terminal;', 'Ca²⁺ channels at the active zone open and Ca²⁺ rushes in.'],
+      call: C('az', 'Active zone', 'docked vesicles', ['Ca²⁺ channels open']), badge: 'CA²⁺ INFLUX', legend: ['ap', 'vgcc', 'ca', 'vesicle'] },
+    { dur: 4, tA: 'az', offA: [0, -5, 27], tB: 'az', offB: [0.5, -4, 23], focus: 'az', chip: 'Release',
+      title: 'Exocytosis', text: ['Ca²⁺ triggers a docked vesicle to fuse with the membrane;', 'glutamate is released into the cleft.'],
+      call: C('az', 'Fusion pore', 'vesicle → membrane', ['glutamate out']), badge: 'RELEASE', legend: ['vesicle', 'glu', 'axon'] },
+    { dur: 5, tA: 'cleft', offA: [0.5, -4, 23], tB: 'psd', offB: [1.5, -5, 24], focus: 'psd', chip: 'Binding',
+      title: 'Receptors open', text: ['Glutamate crosses the cleft and binds AMPA receptors;', 'their channels open and Na⁺ flows into the spine.'],
+      call: C('psd', 'AMPA receptors', 'glutamate-gated', ['Na⁺ in → depolarization']), badge: 'EPSP', legend: ['glu', 'ampa', 'na', 'psd'] },
+    { dur: 7, tA: 'clearView', offA: [0, -14, 66], tB: 'clearView', offB: [0, -20, 92], focus: 'cleft', chip: 'Clearance',
+      title: 'The cleft is cleared', text: ['Glutamate diffuses out of the cleft within 1–2 ms', 'and is taken up by transporters, mostly on astrocytes.'],
+      call: C('astro', 'Astrocyte', 'transporters', ['glutamate taken up']), badge: 'CLEARANCE', legend: ['glu', 'astro', 'eaat'] },
+    { dur: 6, tA: 'endo', offA: [0, -5, 24], tB: 'recyc', offB: [0, -9, 44], focus: 'endoVes', chip: 'Recycling',
+      title: 'The vesicle is recycled', text: ['Membrane is retrieved by endocytosis (here a clathrin-coated pit, one classic route);', 'the new vesicle is refilled with glutamate and another vesicle docks.'],
+      call: C('endoVes', 'Clathrin-coated pit', 'Ø ≈ 90 nm with coat', ['dynamin pinches it off', 'then refilled via vGLUT']), badge: 'RECYCLING', legend: ['clathrin', 'vesicle', 'glu'] },
+    { dur: 5, tA: 'syn', offA: [0, -110, 220], tB: 'syn', offB: [0, -150, 300], focus: 'syn', chip: 'Recap',
+      title: 'Electrical → chemical → electrical', text: ['Transmitter is stored only in the presynaptic terminal,', 'so the signal crosses this synapse in one direction only.'],
+      call: C('cleft', 'One-way', 'pre → post', ['delay ≈ 0.5 ms']), badge: 'RECAP', legend: ['axon', 'den', 'glu', 'astro'] },
+  ],
+};
